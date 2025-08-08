@@ -1,0 +1,57 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+	<!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+	<!-- Public plugin name should be written in Title Case.
+		 Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+	<name>JaNativeTools</name>
+
+	<!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+	<vendor email="susidskiy@bitrixsoft.com" url="https://bitrix24.com">Bitrix24</vendor>
+
+	<!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+		 Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+		 Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+	<description><![CDATA[
+      Complete array key, of PHP functions with special return description.
+    ]]></description>
+
+	<!-- Product and plugin compatibility requirements.
+		 Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+	<depends>com.intellij.modules.lang</depends>
+	<depends>com.jetbrains.php</depends>
+	<depends>JavaScript</depends>
+
+	<!-- Extension points defined by the plugin.
+		 Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+	<extensions defaultExtensionNs="com.intellij">
+		<localInspection
+				level="WARNING"
+				language="JavaScript"
+				enabledByDefault="true"
+				shortName="DepsInspection"
+				displayName="Janative extension dependencies"
+				implementationClass="com.janative.tools.inspection.ExtensionsInspection"
+		/>
+		<completion.contributor implementationClass="com.janative.tools.completion.CompletionDeps" language="any"/>
+		<codeInsight.lineMarkerProvider language="JavaScript"
+										implementationClass="com.janative.tools.colorPreviews.ColorPreviewLineMarker"/>
+		<projectConfigurable
+				instance="com.janative.tools.settings.MainSettings"
+				parentId="tools"
+				id="com.janative.tools.settings.MainSettings"
+				displayName="JaNative Tools"/>
+	</extensions>
+	<actions>
+		<!--        <action id="com.janative.tools.FindDocs" class="com.janative.tools.FindDocs" text="Find in docs"-->
+		<!--                description="mobile.docs.bx">-->
+		<!--            <add-to-group group-id="EditorPopupMenu" anchor="last"/>-->
+		<!--            <keyboard-shortcut keymap="$default" first-keystroke="N"/>-->
+		<!--        </action>-->
+		<action id="com.janative.tools.actions.CreateExtensionFileAction"
+				class="com.janative.tools.actions.CreateExtensionFileAction"
+				text="Create JN Extension"
+				description="Create a JaNative file extension">
+			<add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewWebDevelopment"/>
+		</action>
+	</actions>
+</idea-plugin>
