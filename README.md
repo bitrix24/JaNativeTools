@@ -1,6 +1,6 @@
 # JaNativeTools
 
-JaNativeTools is a plugin for JetBrains IDEs that provides advanced tools for managing dependencies, extensions, and color themes in JS.
+JaNativeTools is a plugin for JetBrains IDEs that provides advanced tools for managing dependencies, extensions, and color themes in JaNative Framework.
 
 ## Features
 
