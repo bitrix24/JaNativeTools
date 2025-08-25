@@ -1,7 +1,8 @@
 package com.janative.tools.apptheme
 
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiFile
+import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VirtualFile
 import com.janative.tools.deps.utils.DependencyPsiUtils
 import org.json.JSONObject
 
@@ -13,9 +14,9 @@ class ColorList(private val project: Project) {
     }
 
     private fun createColorMap() {
-        val colorListFile: PsiFile =
+        val colorListFile: VirtualFile =
             DependencyPsiUtils.findFileByDefinePath("apptheme/src/list", project) ?: return
-        val content = colorListFile.text
+        val content = VfsUtil.loadText(colorListFile)
         val json = JSONObject(
             content
                 .substringAfter("const colors = ")

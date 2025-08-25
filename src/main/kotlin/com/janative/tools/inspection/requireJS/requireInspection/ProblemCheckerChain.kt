@@ -1,4 +1,4 @@
-package com.janative.tools.inspection
+package com.janative.tools.inspection.requireJS.requireInspection
 
 import com.intellij.lang.javascript.psi.JSCallExpression
 
@@ -11,8 +11,8 @@ class ProblemCheckerChain(private val checkers: List<ProblemChecker>) {
 
     fun check(
         node: JSCallExpression,
-        initialResult: ProblemResult? = null
+        checkerResultData: CheckerResultData
     ): ProblemResult? {
-        return if (checkers.isNotEmpty()) checkers.first().check(node, initialResult) else initialResult
+        return checkers.first().check(node, checkerResultData)
     }
 }

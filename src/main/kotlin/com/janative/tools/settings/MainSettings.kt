@@ -6,7 +6,7 @@ import javax.swing.JPanel
 import javax.swing.JCheckBox
 import java.awt.BorderLayout
 import com.intellij.ide.util.PropertiesComponent
-import com.janative.tools.utils.Loc
+import com.janative.tools.lib.localization.Loc
 import com.intellij.ui.TitledSeparator
 import com.janative.tools.settings.form.Checkbox
 
@@ -19,7 +19,7 @@ class MainSettings : Configurable {
 
     companion object {
         fun isDepsSortEnabled(): Boolean {
-            return PropertiesComponent.getInstance().getBoolean("janative.tools.deps.sort", true)
+            return PropertiesComponent.getInstance().getBoolean("janative.tools.deps.sort", false)
         }
 
         fun isDepsAutoSyncEnabled(): Boolean {

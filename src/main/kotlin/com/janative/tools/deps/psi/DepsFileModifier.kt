@@ -17,6 +17,7 @@ import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 import com.janative.tools.deps.model.DependencyType
 import com.intellij.psi.PsiDocumentManager
 import com.janative.tools.deps.utils.DependencyPsiUtils.findExtensionRootDirectory
+import com.janative.tools.lib.localization.Loc
 
 class DepsFileModifier(private val psiModifier: PsiModifier) {
 
@@ -26,7 +27,7 @@ class DepsFileModifier(private val psiModifier: PsiModifier) {
         fun getOrCreateDepsFile(project: Project, contextDirectory: PsiDirectory?): PsiFile? {
             val rootDir = findExtensionRootDirectory(contextDirectory)
             if (rootDir == null) {
-                logger.warn("Could not find extension root directory for: ${contextDirectory?.virtualFile?.path}")
+                logger.warn(Loc.getMessage("deps.extension.root.notFound", contextDirectory?.virtualFile?.path ?: ""))
                 return null
             }
 
@@ -46,12 +47,12 @@ class DepsFileModifier(private val psiModifier: PsiModifier) {
                         val doc = docManager.getDocument(created)
 
                         if (doc != null) {
-                            doc.setText("<?php\n\nreturn [];")
+                            doc.setText("<?php\n\nreturn [];\n")
                             docManager.commitDocument(doc)
                         }
                     }
                 },
-                "Create Deps File",
+                Loc.getMessage("deps.create.file.commandName"),
                 null
             )
 
@@ -84,6 +85,13 @@ class DepsFileModifier(private val psiModifier: PsiModifier) {
         return findDependencyArrayByKey(updatedMainReturnArray, dependencyKey)
     }
 
+
+    fun findMainReturnArray(psiFile: PsiFile): ArrayCreationExpression? {
+        val phpReturn = PsiTreeUtil.findChildOfType(psiFile, PhpReturn::class.java)
+
+        return phpReturn?.firstPsiChild?.let { it as? ArrayCreationExpression }
+    }
+
     private fun findDependencyArrayByKey(
         mainArray: ArrayCreationExpression,
         key: String
@@ -97,11 +105,5 @@ class DepsFileModifier(private val psiModifier: PsiModifier) {
             }
         }
         return null
-    }
-
-    private fun findMainReturnArray(psiFile: PsiFile): ArrayCreationExpression? {
-        val phpReturn = PsiTreeUtil.findChildOfType(psiFile, PhpReturn::class.java)
-
-        return phpReturn?.firstPsiChild?.let { it as? ArrayCreationExpression }
     }
 }

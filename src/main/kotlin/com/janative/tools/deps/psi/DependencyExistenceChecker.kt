@@ -1,34 +1,50 @@
 package com.janative.tools.deps.psi
 
 import com.intellij.psi.PsiElement
-import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.psi.PsiRecursiveElementWalkingVisitor
 import com.janative.tools.deps.constants.ProjectStructureConstants
 import com.janative.tools.deps.utils.DependencyPathUtils
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 
 class DependencyExistenceChecker {
+
     fun checkExists(depsPhpPsiElement: PsiElement, dependencyContent: String): Boolean {
-        if (depsPhpPsiElement.containingFile.name != ProjectStructureConstants.DEPS_FILE_NAME) return false
+        val file = depsPhpPsiElement.containingFile ?: return false
+        if (file.name != ProjectStructureConstants.DEPS_FILE_NAME) return false
 
-        val stringLiterals = PsiTreeUtil.findChildrenOfType(depsPhpPsiElement, StringLiteralExpression::class.java)
+        val depsDir = file.containingDirectory?.virtualFile ?: return false
 
-        if (stringLiterals.isEmpty()) return false
+        var found = false
 
-        val depsDir = depsPhpPsiElement.containingFile.containingDirectory?.virtualFile ?: return false
+        file.accept(object : PsiRecursiveElementWalkingVisitor() {
+            override fun visitElement(element: PsiElement) {
+                if (found) return
+                if (element is StringLiteralExpression) {
+                    var pathInDeps = element.contents
 
-        return stringLiterals.any { literal ->
-            var pathInDeps = literal.contents
+                    if (pathInDeps.startsWith("./") && !dependencyContent.startsWith("./")) {
+                        val rel = pathInDeps.removePrefix("./")
+                        val targetFile = depsDir.findFileByRelativePath("$rel.js")
+                        if (targetFile != null) {
+                            pathInDeps = DependencyPathUtils.createBundleRequirePath(targetFile)
+                        }
+                    }
 
-            if (pathInDeps.startsWith("./")) {
-                val relativePath = pathInDeps.removePrefix("./")
-                val targetFile = depsDir.findFileByRelativePath("$relativePath.js")
-                if (targetFile != null) {
-                    pathInDeps = DependencyPathUtils.createBundleRequirePath(targetFile)
+                    if (pathsMatch(pathInDeps, dependencyContent)) {
+                        found = true
+                        return
+                    }
                 }
-                pathInDeps == dependencyContent
-            }
 
-            DependencyPathUtils.isEquivalentTo(pathInDeps, dependencyContent)
-        }
+                super.visitElement(element)
+            }
+        })
+
+        return found
+    }
+
+    private fun pathsMatch(a: String, b: String): Boolean {
+        if (a == b) return true
+        return DependencyPathUtils.isEquivalentTo(a, b)
     }
 }

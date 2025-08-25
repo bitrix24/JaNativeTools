@@ -2,11 +2,12 @@ package com.janative.tools.deps.utils
 
 import com.intellij.lang.javascript.psi.JSCallExpression
 import com.intellij.lang.javascript.psi.JSLiteralExpression
+import com.intellij.lang.javascript.psi.JSReferenceExpression
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.janative.tools.PsiHelper
 import com.janative.tools.deps.constants.ProjectStructureConstants.COMPONENT_FILE_NAME_JS
@@ -22,25 +23,35 @@ object DependencyPsiUtils {
         DEPS_FILE_NAME
     )
 
-    fun collectDefinePaths(psiFile: PsiFile): List<String> {
-        val definePaths = mutableSetOf<String>()
-        val callExpressions = PsiTreeUtil.findChildrenOfType(psiFile, JSCallExpression::class.java)
+    fun isRequireCall(callExpression: JSCallExpression): Boolean {
+        val ref = callExpression.methodExpression as? JSReferenceExpression ?: return false
 
-        for (callExpression in callExpressions) {
-            if (callExpression.methodExpression?.text == "require" && callExpression.argumentList != null) {
-                val definePath = getStringLiteral(callExpression)
-                if (definePath.isNotBlank()) {
-                    definePaths.add(definePath)
-                }
-            }
-        }
-        return definePaths.toList()
+        return !(ref.qualifier != null || ref.referenceName != "require")
     }
+
+    fun extractRequirePath(callExpression: JSCallExpression): String? {
+        if (!isRequireCall(callExpression)) return null
+
+        val arg = callExpression.arguments.firstOrNull() as? JSLiteralExpression ?: return null
+        val value = arg.value?.toString()?.trim().orEmpty()
+
+        return value.takeIf { it.isNotEmpty() }
+    }
+
+    fun collectRequireCallExpressions(psiFile: PsiFile): Sequence<JSCallExpression> =
+        PsiTreeUtil.findChildrenOfType(psiFile, JSCallExpression::class.java)
+            .asSequence()
+            .filter { isRequireCall(it) }
+
+    fun collectRequirePaths(psiFile: PsiFile): List<String> =
+        collectRequireCallExpressions(psiFile)
+            .mapNotNull { extractRequirePath(it) }
+            .distinct()
+            .toList()
 
     fun collectFilesFromRootDirectory(rootDirectory: PsiDirectory): List<PsiFile> {
         val files = mutableListOf<PsiFile>()
         collectFilesRecursively(rootDirectory, files, isRoot = true)
-
         return files
     }
 
@@ -53,21 +64,10 @@ object DependencyPsiUtils {
         return findExtensionRootDirectory(fileDirectory)?.findFile(DEPS_FILE_NAME)
     }
 
-    fun findFileByDefinePath(definePath: String, project: Project): PsiFile? {
-        return ApplicationManager.getApplication().runReadAction<PsiFile?> {
+    fun findFileByDefinePath(definePath: String, project: Project): VirtualFile? {
+        return ApplicationManager.getApplication().runReadAction<VirtualFile?> {
             PsiHelper.findFilesContainingText(project, "jn.define('${definePath}'", true)
                 .firstOrNull()
-                ?.let { PsiManager.getInstance(project).findFile(it) }
-        }
-    }
-
-    fun getStringLiteral(jsCallExpression: JSCallExpression): String {
-        val expression = PsiTreeUtil.findChildrenOfType(jsCallExpression, JSLiteralExpression::class.java)
-
-        return if (expression.isNotEmpty()) {
-            expression.first().value.toString()
-        } else {
-            ""
         }
     }
 
@@ -86,7 +86,6 @@ object DependencyPsiUtils {
 
     private fun isExtensionRoot(directory: PsiDirectory, withComponentCheck: Boolean = false): Boolean {
         val targetFileName = rootIndicatorFiles.find { directory.findFile(it) != null }
-
         return when {
             targetFileName == null -> false
             !withComponentCheck -> true

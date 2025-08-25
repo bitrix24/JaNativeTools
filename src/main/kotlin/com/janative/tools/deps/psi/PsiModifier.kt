@@ -3,7 +3,9 @@ package com.janative.tools.deps.psi
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiWhiteSpace
+import com.intellij.psi.PsiComment
 import com.jetbrains.php.lang.psi.elements.ArrayCreationExpression
+import com.janative.tools.lib.localization.Loc
 
 class PsiModifier {
 
@@ -17,7 +19,7 @@ class PsiModifier {
     ) {
         val phpArray = arrayPsiElement as? ArrayCreationExpression
         if (phpArray == null) {
-            println("Error: arrayPsiElement is not ArrayCreationExpression")
+            println(Loc.getMessage("error.array.notArrayCreation"))
             return
         }
 
@@ -27,16 +29,20 @@ class PsiModifier {
 
         if (elements.isEmpty()) {
             val newElement = phpArray.addBefore(elementToAdd, closingBracket)
+            var addedComma: PsiElement? = null
+            if (ensureComma) {
+                addedComma = phpArray.addAfter(phpElementFactory.createComma(project), newElement)
+            }
             if (ensureNewLine) {
                 phpArray.addBefore(phpElementFactory.createNewLine(project), newElement)
-                phpArray.addAfter(phpElementFactory.createNewLine(project), newElement)
+                phpArray.addAfter(phpElementFactory.createNewLine(project), addedComma ?: newElement)
             }
         } else {
             val lastElement = elements.last()
 
             if (ensureComma) {
                 var next = lastElement.nextSibling
-                while (next is PsiWhiteSpace) {
+                while (next is PsiWhiteSpace || next is PsiComment) {
                     next = next.nextSibling
                 }
                 if (next?.text != ",") {
@@ -65,7 +71,7 @@ class PsiModifier {
         ensureComma: Boolean = true
     ) {
         if (targetArrayPsiElement !is ArrayCreationExpression) {
-            println("Error: targetArrayPsiElement is not ArrayCreationExpression for addHashElementToArray")
+            println(Loc.getMessage("error.targetArray.notArrayCreation"))
             return
         }
 

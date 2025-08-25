@@ -10,13 +10,14 @@ import com.intellij.lang.javascript.psi.JSReferenceExpression
 import com.janative.tools.apptheme.ColorList
 import java.awt.Color
 import javax.swing.Icon
+import com.janative.tools.lib.localization.Loc
 
 class ColorPreviewLineMarker : LineMarkerProviderDescriptor() {
 
     private val scale = JBUI.scale(10)
     private var colorList: ColorList? = null
 
-    override fun getName() = "HexColorLineMarker"
+    override fun getName() = Loc.getMessage("colorPreview.name")
 
     override fun getIcon(): Icon {
         val color = Color(0xFFFFA800.toInt(), true)
@@ -45,7 +46,7 @@ class ColorPreviewLineMarker : LineMarkerProviderDescriptor() {
 
         val color = Color.decode(hexColor)
         val icon = ColorIcon(scale, color)
-        val tooltipText = "Color: $hexColor"
+        val tooltipText = Loc.getMessage("colorPreview.tooltip", hexColor)
 
         return LineMarkerInfo<PsiElement>(
             element,

@@ -2,8 +2,9 @@ package com.janative.tools.actions.template
 
 import com.intellij.psi.PsiDirectory
 import com.janative.tools.deps.constants.ProjectStructureConstants.EXTENSION_FILE_NAME_JS
-import com.janative.tools.utils.Format
-import com.janative.tools.deps.utils.DependencyPathUtils
+import com.janative.tools.lib.utils.Text
+import com.janative.tools.lib.utils.Format
+import com.janative.tools.lib.utils.Path
 
 abstract class BaseTemplate(private val dir: PsiDirectory, private val name: String) {
     fun generateContent(): String {
@@ -13,7 +14,7 @@ abstract class BaseTemplate(private val dir: PsiDirectory, private val name: Str
     }
 
     private fun getDefinePath(): String {
-        val relativePath = DependencyPathUtils.getJaNativeRelativePath(dir.virtualFile.path)
+        val relativePath = Path.getJaNativeRelativePath(dir.virtualFile.path)
 
         if (isExtension()) {
             return relativePath
@@ -45,7 +46,7 @@ jn.define('$definePath', (require, exports, module) => {
     protected fun getClassName(): String {
         val name = if (isExtension()) dir.name else getFileName()
 
-        return Format.kebabToCamelCase(name)
+        return Text.kebabToCamelCase(name)
     }
 
     protected fun getFileName(): String {
