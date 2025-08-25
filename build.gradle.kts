@@ -15,7 +15,7 @@ intellijPlatform {
     pluginConfiguration {
         name = "JaNativeTools"
         id = "com.janative.tools"
-        version = "1.0.5"
+        version = "25.241.6"
         vendor {
             name = "Bitrix"
             email = "susidskiy@bitrixsoft.com"

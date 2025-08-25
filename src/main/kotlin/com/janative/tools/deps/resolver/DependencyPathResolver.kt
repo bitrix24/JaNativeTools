@@ -1,27 +1,26 @@
 package com.janative.tools.deps.resolver
 
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDirectory
-import com.intellij.psi.PsiFile
 import com.janative.tools.deps.utils.DependencyPathUtils
 import com.janative.tools.deps.model.DependencyType
 
 class DependencyPathResolver() {
     fun resolve(
         rootDirectory: PsiDirectory,
-        definedFile: PsiFile?,
+        defineFile: VirtualFile,
         definePath: String,
         dependencyType: DependencyType
     ): String {
 
         val canonicalPath = when (dependencyType) {
             DependencyType.BUNDLE -> DependencyPathUtils.createRelativeBundlePath(
-                definePath,
+                defineFile,
                 rootDirectory,
-                definedFile
             )
 
             DependencyType.EXTENSIONS,
-            DependencyType.COMPONENTS -> DependencyPathUtils.createExtensionOrComponentPath(definePath, definedFile)
+            DependencyType.COMPONENTS -> DependencyPathUtils.createExtensionOrComponentPath(definePath, defineFile)
         }
 
         return canonicalPath

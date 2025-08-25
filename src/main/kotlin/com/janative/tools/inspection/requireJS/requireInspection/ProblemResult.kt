@@ -1,4 +1,4 @@
-package com.janative.tools.inspection
+package com.janative.tools.inspection.requireJS.requireInspection
 
 import com.intellij.codeInspection.LocalQuickFix
 import com.intellij.codeInspection.ProblemHighlightType
@@ -7,12 +7,11 @@ import com.intellij.openapi.vfs.VirtualFile
 data class ProblemResult(
     val id: String,
     val message: String,
-    val missingData: MissingData,
     val highlightType: ProblemHighlightType = ProblemHighlightType.WARNING,
     val fixes: List<LocalQuickFix> = emptyList()
 )
 
-data class MissingData(
-    val path: String,
-    var file: VirtualFile?
+data class CheckerResultData(
+    val definedPath: String,
+    var file: VirtualFile? = null
 )

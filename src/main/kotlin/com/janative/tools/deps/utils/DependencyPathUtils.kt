@@ -2,10 +2,9 @@ package com.janative.tools.deps.utils
 
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDirectory
-import com.intellij.psi.PsiFile
-import com.janative.tools.deps.constants.ProjectStructureConstants
 import com.janative.tools.deps.model.DependencyType
-import com.janative.tools.utils.Format
+import com.janative.tools.lib.utils.Format
+import com.janative.tools.lib.utils.Path
 import java.io.File
 import java.nio.file.Paths
 
@@ -23,43 +22,26 @@ object DependencyPathUtils {
         }
     }
 
-    fun createRelativeBundlePath(definePath: String, rootDirectory: PsiDirectory, file: PsiFile?): String {
-        val filePath = file?.virtualFile?.path
+    fun createRelativeBundlePath(file: VirtualFile, rootDirectory: PsiDirectory): String {
         val directoryPath = rootDirectory.virtualFile.path
+        val relativePath = getRelativePath(directoryPath, file.path)
 
-        if (filePath != null) {
-            val relativePath = getRelativePath(directoryPath, filePath)
-
-            return toRelativeBundlePath(relativePath)
-        }
-
-        var defineBundlePath = definePath
-        val modulePathParts = getJaNativeRelativePath(directoryPath).split('/')
-
-        for (i in modulePathParts.indices) {
-            val suffix = modulePathParts.subList(i, modulePathParts.size).joinToString("/")
-            if (definePath.startsWith("$suffix/")) {
-                defineBundlePath = definePath.substring(suffix.length + 1)
-                break
-            }
-        }
-
-        return toRelativeBundlePath(defineBundlePath)
+        return Format.removeExtJs(toRelativeBundlePath(relativePath))
     }
 
     private fun toRelativeBundlePath(path: String): String {
         return if (path.startsWith("..")) path else ".$DIRECTORY_SEPARATOR$path"
     }
 
-    fun createBundleRequirePath(definedFile: VirtualFile): String {
-        return Format.removeExtJs(getJaNativeRelativePath(definedFile.path))
+    fun createBundleRequirePath(defineFile: VirtualFile): String {
+        return Format.removeExtJs(Path.getJaNativeRelativePath(defineFile.path))
     }
 
-    fun createExtensionOrComponentPath(definePath: String, definedFile: PsiFile?): String {
-        if (definedFile == null) return definePath
+    fun createExtensionOrComponentPath(definePath: String, defineFile: VirtualFile?): String {
+        if (defineFile == null) return definePath
 
-        val moduleName = getModuleNameForFile(definedFile.virtualFile)
-        val jaNativeRelativePath = Format.removeExtJs(getJaNativeRelativePath(definedFile.virtualFile.path))
+        val moduleName = getModuleNameForFile(defineFile)
+        val jaNativeRelativePath = Format.removeExtJs(Path.getJaNativeRelativePath(defineFile.path))
 
         return if (moduleName != null && jaNativeRelativePath.startsWith(moduleName)) {
             definePath.replaceFirst(DIRECTORY_SEPARATOR, MODULE_PATH_SEPARATOR)
@@ -86,31 +68,6 @@ object DependencyPathUtils {
         } else {
             return null
         }
-    }
-
-    fun getJaNativeRelativePath(directoryPath: String): String {
-        val parts = directoryPath.split('/')
-        val mobileAppIndex = parts.indexOf(ProjectStructureConstants.MOBILE_APP_DIR_NAME)
-
-        if (mobileAppIndex == -1 || mobileAppIndex + 1 >= parts.size) {
-            return ""
-        }
-
-        for (i in mobileAppIndex + 1 until parts.size) {
-            if (parts[i] == DependencyType.EXTENSIONS.value || parts[i] == DependencyType.COMPONENTS.value) {
-                val relevantPathParts = parts.subList(i + 1, parts.size)
-
-                val finalPathParts =
-                    if (relevantPathParts.isNotEmpty() && relevantPathParts[0] == ProjectStructureConstants.BITRIX_DIR_NAME) {
-                        relevantPathParts.subList(1, relevantPathParts.size)
-                    } else {
-                        relevantPathParts
-                    }
-                return finalPathParts.joinToString("/")
-            }
-        }
-
-        return ""
     }
 
     fun getRelativePath(basePath: String, targetPath: String): String {

@@ -28,13 +28,23 @@
 				level="WARNING"
 				language="JavaScript"
 				enabledByDefault="true"
-				shortName="DepsInspection"
-				displayName="Janative extension dependencies"
-				implementationClass="com.janative.tools.inspection.ExtensionsInspection"
+				shortName="JNRequireJSInspection"
+				displayName="JaNative RequireJS Inspection"
+				implementationClass="com.janative.tools.inspection.requireJS.requireInspection.RequireInspection"
 		/>
-		<completion.contributor implementationClass="com.janative.tools.completion.CompletionDeps" language="any"/>
-		<codeInsight.lineMarkerProvider language="JavaScript"
-										implementationClass="com.janative.tools.colorPreviews.ColorPreviewLineMarker"/>
+		<localInspection
+				level="WARNING"
+				language="JavaScript"
+				enabledByDefault="true"
+				shortName="JNDefineJSInspection"
+				displayName="JaNative DefineJS Inspection"
+				implementationClass="com.janative.tools.inspection.requireJS.defineInspection.DefineInspection"
+		/>
+		<!--		<completion.contributor implementationClass="com.janative.tools.completion.CompletionDeps" language="any"/>-->
+		<codeInsight.lineMarkerProvider
+				language="JavaScript"
+				implementationClass="com.janative.tools.colorPreviews.ColorPreviewLineMarker"
+		/>
 		<projectConfigurable
 				instance="com.janative.tools.settings.MainSettings"
 				parentId="tools"

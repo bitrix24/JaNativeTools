@@ -2,6 +2,7 @@ package com.janative.tools.deps.core
 
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.janative.tools.deps.model.DependencyInfo
@@ -22,6 +23,7 @@ class DepsManager(
     private val existenceChecker: DependencyExistenceChecker,
     private val dependencySorter: DependencySorter
 ) {
+    private var depsPsiFile: PsiFile? = null
 
     companion object {
         fun createDefault(): DepsManager {
@@ -36,6 +38,14 @@ class DepsManager(
         }
     }
 
+    fun setDepsFile(psiFile: PsiFile) {
+        this.depsPsiFile = psiFile
+    }
+
+    fun hasDepsFile(): Boolean {
+        return depsPsiFile != null
+    }
+
     fun addMissingDependencies(
         targetDepsPsiFile: PsiFile,
         missingDependencyPaths: List<String>,
@@ -43,17 +53,14 @@ class DepsManager(
     ) {
         val resolvedDependencies = mutableListOf<DependencyInfo>()
 
-        for (pathString in missingDependencyPaths) {
-            val definedFile = DependencyPsiUtils.findFileByDefinePath(pathString, project)
-            val dependencyType = DependencyTypeResolver().resolve(pathString, definedFile, project)
-            val dependencyPath = DependencyPathResolver().resolve(
-                targetDepsPsiFile.containingDirectory,
-                definedFile,
-                pathString,
-                dependencyType
-            )
+        if (!this.hasDepsFile()) {
+            this.setDepsFile(targetDepsPsiFile)
+        }
 
-            resolvedDependencies.add(DependencyInfo(dependencyPath, dependencyType))
+        for (definePath in missingDependencyPaths) {
+            resolveDependencyInfo(definePath = definePath, project = project)?.let { info ->
+                resolvedDependencies.add(info)
+            }
         }
 
         if (resolvedDependencies.isEmpty()) return
@@ -98,20 +105,49 @@ class DepsManager(
                     psiModifier,
                 )
             }
-//            CodeStyleManager.getInstance(project).reformat(targetDepsPsiFile)
+//			CodeStyleManager.getInstance(project).reformat(targetDepsPsiFile)
         }
     }
 
-    fun isDependencyListed(
-        contextFile: PsiFile,
-        definePath: String,
-    ): Pair<Boolean, String?> {
-        val depsPsiFile = DependencyPsiUtils.findDepsPhpFile(contextFile.containingDirectory)
-            ?: return Pair(false, null)
+    fun isDependencyListed(definePath: String, defineFile: VirtualFile?): Pair<Boolean, String?> {
+        val depsFile = depsPsiFile ?: return Pair(false, null)
+        val depInfo = resolveDependencyInfo(definePath, defineFile, depsFile.project) ?: return Pair(false, null)
+        val mainArray = depsFileAccessor.findMainReturnArray(depsFile) ?: return Pair(false, depInfo.path)
+        val exists = existenceChecker.checkExists(mainArray, depInfo.path)
 
-        val exists = existenceChecker.checkExists(depsPsiFile, definePath)
+        return Pair(exists, if (exists) depInfo.path else null)
+    }
 
-        return Pair(exists, definePath)
+    private fun resolveDependencyInfo(
+        definePath: String?,
+        defineFile: VirtualFile? = null,
+        project: Project
+    ): DependencyInfo? {
+        if (definePath.isNullOrBlank() || this.depsPsiFile == null) {
+            return null
+        }
+
+        val defineFile =
+            defineFile ?: DependencyPsiUtils.findFileByDefinePath(definePath, project)
+
+        if (defineFile == null) {
+            return null
+        }
+
+        val dependencyType = DependencyTypeResolver().resolve(
+            definePath = definePath,
+            defineFile = defineFile,
+            project = project
+        ) ?: return null
+
+        val depsDir = this.depsPsiFile?.containingDirectory ?: return null
+        val dependencyPath = DependencyPathResolver().resolve(
+            depsDir,
+            defineFile,
+            definePath,
+            dependencyType
+        )
+        return DependencyInfo(dependencyPath, dependencyType)
     }
 
     private fun modifyPsiAndCommit(project: Project, psiFile: PsiFile, action: () -> Unit) {
@@ -123,6 +159,13 @@ class DepsManager(
         if (document != null) {
             psiDocumentManager.doPostponedOperationsAndUnblockDocument(document)
             psiDocumentManager.commitDocument(document)
+
+            if (!document.text.endsWith("\n")) {
+                WriteCommandAction.runWriteCommandAction(project) {
+                    document.insertString(document.textLength, "\n")
+                    psiDocumentManager.commitDocument(document)
+                }
+            }
         }
     }
 }
